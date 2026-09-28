@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { Platform } from "react-native";
 
@@ -15,8 +15,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-let auth;
+// ✅ Fix error 1 & 4 — new cache config replaces enableIndexedDbPersistence
+export const db = initializeFirestore(app, {
+  localCache: {
+    kind: "persistent",
+    cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+  },
+});
 
+// Auth setup
+let auth;
 if (Platform.OS === "web") {
   auth = getAuth(app);
 } else {
@@ -28,16 +36,5 @@ if (Platform.OS === "web") {
 }
 
 export { auth };
-export const db = getFirestore(app);
 export const storage = getStorage(app);
 export default app;
-
-// Enable offline persistence — works without internet after first load
-import { enableIndexedDbPersistence } from "firebase/firestore";
-enableIndexedDbPersistence(db).catch(err => {
-  if (err.code === "failed-precondition") {
-    console.log("Offline persistence: multiple tabs open");
-  } else if (err.code === "unimplemented") {
-    console.log("Offline persistence: not supported on this browser");
-  }
-});
